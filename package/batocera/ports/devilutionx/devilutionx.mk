@@ -22,15 +22,21 @@ DEVILUTIONX_CONF_OPTS += -DPREFILL_PLAYER_NAME=ON
 DEVILUTIONX_CONF_OPTS += -DFETCHCONTENT_FULLY_DISCONNECTED=ON
 DEVILUTIONX_CONF_OPTS += -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
-# ZeroTier on aarch64 uses ARMv8 Cryptography Extensions.
-# These extension are optional and only certain Armv8-A CPUs support them.
-# Disables ZeroTier if the CPU compilation flags do not specify the "+crypto" extension.
-ifeq ($(BR2_aarch64)$(BR2_ARM_CPU_ARMV8A),yy)
-    ifneq ($(findstring +crypto,$(BR2_TARGET_OPTIMIZATION)),+crypto)
+# Experimental ZeroTier support for H700 handheld builds (RG40XX H/V).
+# Keep the existing architecture checks for all other targets.
+# NOTE: Verify the H700 target symbol in the selected firmware configuration
+# and validate ZeroTier on Cortex-A53 before using this in a release.
+ifeq ($(BR2_PACKAGE_BATOCERA_TARGET_H700),y)
+    DEVILUTIONX_CONF_OPTS += -DDISABLE_ZERO_TIER=OFF
+else
+    # ZeroTier on aarch64 previously required ARMv8 crypto extensions.
+    ifeq ($(BR2_aarch64)$(BR2_ARM_CPU_ARMV8A),yy)
+        ifneq ($(findstring +crypto,$(BR2_TARGET_OPTIMIZATION)),+crypto)
+            DEVILUTIONX_CONF_OPTS += -DDISABLE_ZERO_TIER=ON
+        endif
+    else ifeq ($(BR2_arm),y)
         DEVILUTIONX_CONF_OPTS += -DDISABLE_ZERO_TIER=ON
     endif
-else ifeq ($(BR2_arm),y)
-    DEVILUTIONX_CONF_OPTS += -DDISABLE_ZERO_TIER=ON
 endif
 
 # ugly hack becuase the is no version in the source file
